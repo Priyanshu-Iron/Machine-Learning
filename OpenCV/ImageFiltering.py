@@ -1,16 +1,17 @@
-# Image Filtering (Edge Detection)
-
 import cv2
 import sys
-import numpy
+import numpy as np
 
-PREVIEW  = 0  # Preview Mode
-BLUR     = 1  # Blurring Filter
+# Define filter modes
+PREVIEW = 0  # Preview Mode
+BLUR = 1  # Blurring Filter
 FEATURES = 2  # Corner Feature Detector
-CANNY    = 3  # Canny Edge Detector
+CANNY = 3  # Canny Edge Detector
 
+# Parameters for goodFeaturesToTrack
 feature_params = dict(maxCorners=500, qualityLevel=0.2, minDistance=15, blockSize=9)
-s = 0
+
+s = 0  # Default camera source
 if len(sys.argv) > 1:
     s = sys.argv[1]
 
@@ -21,6 +22,7 @@ win_name = "Camera Filters"
 cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
 result = None
 
+# Open video source
 source = cv2.VideoCapture(s)
 
 while alive:
@@ -28,7 +30,7 @@ while alive:
     if not has_frame:
         break
 
-    frame = cv2.flip(frame, 1)
+    frame = cv2.flip(frame, 1)  # Flip for better user experience
 
     if image_filter == PREVIEW:
         result = frame
@@ -37,17 +39,20 @@ while alive:
     elif image_filter == BLUR:
         result = cv2.blur(frame, (13, 13))
     elif image_filter == FEATURES:
-        result = frame
+        result = frame.copy()  # Use a copy to avoid modifying the original frame
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         corners = cv2.goodFeaturesToTrack(frame_gray, **feature_params)
+
         if corners is not None:
-            for x, y in numpy.float32(corners).reshape(-1, 2):
-                cv2.circle(result, (x, y), 10, (0, 255, 0), 1)
+            for corner in corners:
+                x, y = corner.ravel()  # Flatten the (1,2) array into (2,)
+                cv2.circle(result, (int(x), int(y)), 10, (0, 255, 0), 1)
 
     cv2.imshow(win_name, result)
 
+    # Key controls
     key = cv2.waitKey(1)
-    if key == ord("Q") or key == ord("q") or key == 27:
+    if key == ord("Q") or key == ord("q") or key == 27:  # Exit on 'Q' or 'Esc'
         alive = False
     elif key == ord("C") or key == ord("c"):
         image_filter = CANNY
@@ -59,4 +64,4 @@ while alive:
         image_filter = PREVIEW
 
 source.release()
-cv2.destroyWindow(win_name)
+cv2.destroyAllWindows()
